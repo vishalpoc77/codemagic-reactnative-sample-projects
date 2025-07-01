@@ -1,1 +1,66 @@
+workflows:
+  react-native-android:
+    name: React Native Android Debug
+    max_build_duration: 120
+    instance_type: mac_mini_m2
 
+    environment:
+      # Removed android_signing to skip keystore usage
+      # Removed google_play group since publishing is disabled
+      vars:
+        PACKAGE_NAME: "io.codemagic.sample.reactnative"
+
+    scripts:
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+
+      - name: Install npm dependencies
+        script: |
+          rm -f yarn.lock
+          npm install --legacy-peer-deps
+          npm install react@19.1.0 react-native@0.80.0 expo@~53.0.12
+          npm uninstall react-navigation
+          npm install @react-navigation/native react-native-reanimated react-native-gesture-handler react-native-screens react-native-safe-area-context
+          npm install --save-dev react-test-renderer@19.1.0
+
+      - name: Clean previous builds
+        script: |
+          rm -rf android ios
+          rm -rf node_modules
+          npm cache clean --force
+          npm install
+
+      - name: Run Expo Prebuild
+        script: |
+          npm install expo
+          npx expo prebuild
+
+      # name: Set up app/build.gradle
+        #script: |
+          #mv ./support-files/build.gradle android/app
+
+      - name: Clean Gradle cache (force Kotlin 1.9.0)
+        script: |
+          rm -rf ~/.gradle/caches/
+          cd android
+          ./gradlew wrapper --gradle-version 8.6 --distribution-type all
+          ./gradlew clean
+          ./gradlew build
+      
+      - name: Build Android debug APK
+        script: |
+          cd android
+          ./gradlew clean
+          ./gradlew assembleDebug
+
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+
+    publishing:
+      email:
+        recipients:
+          - vishal.snyk@gmail.com
+        notify:
+          success: true
+          failure: false
