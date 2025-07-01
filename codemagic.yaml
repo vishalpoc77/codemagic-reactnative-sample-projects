@@ -40,11 +40,10 @@ workflows:
         #script: |
           #mv ./support-files/build.gradle android/app
 
-      - name: Clean Gradle cache (force Kotlin 1.9.0)
+      - name: Clean Gradle cache
         script: |
           rm -rf ~/.gradle/caches/
           cd android
-          ./gradlew wrapper --gradle-version 8.6 --distribution-type all
           ./gradlew clean
           ./gradlew build
       
